@@ -1,151 +1,182 @@
 import streamlit as st
 import pandas as pd
-import math
 from pathlib import Path
+import base64
+import time
+from TrendProcesses import FetchData, CreateFeatures, RunAnalysis, RunModels
+
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='GDP Dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title='The News Trend Predictor',
+    page_icon=':newspaper:',
+    initial_sidebar_state='collapsed',
 )
+
+# CSS:
+with open(Path(__file__).parent/'style.css') as css_file:
+    st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+
+def set_bg_hack(main_bg):
+    main_bg_ext = "jpg"
+        
+    st.markdown(
+         f"""
+         <style>
+         .appview-container {{
+             background: url(data:image/{main_bg_ext};base64,{base64.b64encode(open(main_bg, "rb").read()).decode()});
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
+#set_bg_hack('desk-blurred.jpg')
+
+
+
+# Initialization of session state:
+if 'item_string' not in st.session_state:
+    st.session_state.item_string = ''
+if 'submitted' not in st.session_state:
+    st.session_state.submitted = False
 
 # -----------------------------------------------------------------------------
 # Declare some useful functions.
 
 @st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+def restart():
+    st.session_state.submitted = False
+    st.rerun()
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+def submit_button(new_item_string):
+    string = new_item_string.lower().strip()
+    # Check errors:
+    if st.session_state.submitted == True:
+        return
+    if string == '':
+        st.warning('Please enter a news item string!', icon='🚨')
+    else:
+        st.session_state.item_string = string
+        st.session_state.submitted = True
+    return
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+def plot_data(df_DT, df_KNN, df_LR, df):
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
+    st.header(f'Report: \'{st.session_state.item_string}\'')
+    
+    ''
+    ''
+
+    st.subheader(':deciduous_tree: Decision Tree Model')
+    st.line_chart(
+        df_DT,
+        x=None,
+        y=('real', 'prediction'),
+        color=('#43b828', '#03a1fc')
     )
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+    ''
+    ''
 
-    return gdp_df
+    st.subheader(':runner: K-Nearest Neighbour Model')
+    st.line_chart(
+        df_KNN,
+        x=None,
+        y=('real', 'prediction'),
+        color=('#de12e6', '#03a1fc')
+    )
 
-gdp_df = get_gdp_data()
+    ''
+    ''
+
+    st.subheader(':wrench: Linear Regression Model')
+    st.line_chart(
+        df_LR,
+        x=None,
+        y=('real', 'prediction'),
+        color=('#e61247', '#03a1fc')
+    )
+
+    return
 
 # -----------------------------------------------------------------------------
 # Draw the actual page
 
 # Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP Dashboard
+st.markdown(
+        f"""
+        <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" class="svgicon" fill="#5f6368"><path d="m105-233-65-47 200-320 120 140 160-260 109 163q-23 1-43.5 5.5T545-539l-22-33-152 247-121-141-145 233ZM863-40 738-165q-20 14-44.5 21t-50.5 7q-75 0-127.5-52.5T463-317q0-75 52.5-127.5T643-497q75 0 127.5 52.5T823-317q0 26-7 50.5T795-221L920-97l-57 57ZM643-217q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Zm89-320q-19-8-39.5-13t-42.5-6l205-324 65 47-188 296Z"/></svg>
+        The News Trend Predictor
+        </h1>
+        """,
+        unsafe_allow_html=True
+    )
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
 
-# Add some spacing
+if st.session_state.submitted == False:
+    st.header('About')
+    st.markdown("""
+        Our Introduction here!
+        Our Introduction here!
+        Our Introduction here!
+        Our Introduction here!
+        Our Introduction here!
+    """, unsafe_allow_html=True)
+
+
+    st.header('Generate a Report')
+    item_input = st.text_input(label='Enter your news item search string')
+    st.button(label='Generate', on_click=submit_button, args=[item_input])
+    ''
+    st.markdown("""
+        :warning:
+        Report generation can take up to 3 minutes.
+        <br>
+        :warning:
+        We highly recommend avoiding unnecessary characters and spaces, and using broad search strings.
+    """, unsafe_allow_html=True)
+else:
+
+    if st.button(label='Reset'):
+        restart()
+    st.markdown("""
+        <i style="max-width: 50%;">Note: Resetting will remove the current report from memory.</i>
+    """, unsafe_allow_html=True)
+
+
+
+    raw_data_loader = st.progress(0, text=f"Fetching trend data for {st.session_state.item_string}")
+    for percent_complete in range(100):
+        raw_data_loader.progress(percent_complete + 1, text=f"Fetching trend data for '{st.session_state.item_string}'.")
+    time.sleep(1)
+    raw_data_loader.empty()
+    data_fetcher = FetchData(raw_data_loader)
+    trend, yt_data = data_fetcher.fetch_and_return_final_df_list(st.session_state.item_string)
+
+    # TESTING DATA:
+    #all_trends = pd.read_csv(Path(__file__).parent/'data/test_trends_data.csv')
+    #trend = all_trends.loc[:, ["date", all_trends.columns[1]]]
+    #yt_data = pd.read_csv(Path(__file__).parent/'data/test_yt_data.csv')
+
+    remaining_processes_loader = st.progress(0, text=f"Feature engineering datasets for '{st.session_state.item_string}'.")
+    feature_creator = CreateFeatures()
+    data, data_normalised = feature_creator.create_features(trend, yt_data)
+
+    remaining_processes_loader.progress(33, text=f"Analysing datasets for '{st.session_state.item_string}'.")
+    # TODO - add analysis and plot analysis:
+    #corr_matrix = analyser = RunAnalysis()
+
+    remaining_processes_loader.progress(66, text=f"Modelling predictions for '{st.session_state.item_string}'.")
+    modeller = RunModels()
+    df_DT, df_KNN, df_LR = modeller.run_all_models(data_normalised)
+
+    remaining_processes_loader.progress(99, text=f"Plotting results for '{st.session_state.item_string}'.")
+
+
+    remaining_processes_loader.empty()
+    plot_data(df_DT, df_KNN, df_LR, data)
+
 ''
 ''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
