@@ -5,4 +5,4 @@ pytrends
 holidays
 numpy
 pytz
-sklearn
+scikit-learn
