@@ -2,10 +2,7 @@ streamlit-nightly
 pandas
 requests
 pytrends
-datetime
-random
 holidays
-math
 numpy
 pytz
 sklearn.neighbors
