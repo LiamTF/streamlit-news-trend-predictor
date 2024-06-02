@@ -1,7 +1,7 @@
 streamlit-nightly
 pandas
 requests
-pytrends.request
+pytrends
 datetime
 time
 random
