@@ -5,10 +5,4 @@ pytrends
 holidays
 numpy
 pytz
-sklearn.neighbors
-sklearn.linear_model
-sklearn.tree
-sklearn.model_selection
-sklearn.preprocessing
-sklearn.metrics
-sklearn.metrics
+sklearn
