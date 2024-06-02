@@ -3,7 +3,6 @@ pandas
 requests
 pytrends
 datetime
-time
 random
 holidays
 math
