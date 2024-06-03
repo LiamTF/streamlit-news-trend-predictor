@@ -86,7 +86,6 @@ class FetchData:
 
         # Get the timestamp for 1 month ago, formatted correctly:
         date_ranges = create_date_ranges(days_to_fetch)
-        print(date_ranges)
         results = {}
 
 
