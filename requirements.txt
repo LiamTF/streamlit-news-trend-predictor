@@ -8,5 +8,5 @@ plotly
 lightgbm
 pytrends==4.9.2
 requests==2.22.0
-urllib3==1.25.8
+urllib3==1.26.5
 

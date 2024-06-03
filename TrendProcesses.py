@@ -18,7 +18,7 @@ from sklearn.metrics import mean_squared_error
 
 class FetchData:
 
-    # Path & URL Strings:    
+    # Path & URL Strings:
     def __init__(self, loader: any):
         self._yt_api = "https://yt.lemnoslife.com/noKey/"
         self.loader = loader
@@ -35,7 +35,7 @@ class FetchData:
 
         trends_df = pd.DataFrame()
 
-        pytrends = TrendReq(retries=40, backoff_factor=0.1)
+        pytrends = TrendReq(retries=30, backoff_factor=0.1, hl='en-US')
 
         pytrends.build_payload([news_item], cat=0, timeframe="today 1-m", geo='', gprop='')
         df = pytrends.interest_over_time()
