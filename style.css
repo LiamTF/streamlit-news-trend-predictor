@@ -33,6 +33,10 @@ body, html, .stApp {
     border-radius: 0 !important;
 }
 
+header {
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+
 .appview-container:first-of-type {
     background: #EFEFBB;  /* fallback for old browsers */
     background: -webkit-linear-gradient(to right, #D4D3DD, #EFEFBB);  /* Chrome 10-25, Safari 5.1-6 */
@@ -47,6 +51,7 @@ body, html, .stApp {
     margin-top: 4rem;
     margin-bottom: 2rem;
     padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
     border-bottom-left-radius: 4rem;
 }
 
@@ -71,7 +76,7 @@ h1 {
     margin-bottom: 1rem;
 }
     h1 .svgicon {
-        fill: var(--black);
+        fill: rgb(31, 240, 31);
         width: 3rem;
         height: 3rem;
         margin: 0 auto 0.5rem;
@@ -98,7 +103,7 @@ button {
     border: 0.2rem solid var(--black) !important;
     box-shadow: 0.4rem 0.4rem var(--darkgray);
     border-radius: 0 !important;
-    margin: 0 auto !important;
+    margin: 0 0 0 2rem;
     padding: 0.5rem 1rem;
     text-decoration: none;
     color: var(--black);

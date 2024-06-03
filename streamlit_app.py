@@ -4,6 +4,7 @@ from pathlib import Path
 import base64
 import time
 from TrendProcesses import FetchData, CreateFeatures, RunAnalysis, RunModels
+import plotly.express as px
 
 
 # Set the title and favicon that appear in the Browser's tab bar.
@@ -17,21 +18,6 @@ st.set_page_config(
 with open(Path(__file__).parent/'style.css') as css_file:
     st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
 
-def set_bg_hack(main_bg):
-    main_bg_ext = "jpg"
-        
-    st.markdown(
-         f"""
-         <style>
-         .appview-container {{
-             background: url(data:image/{main_bg_ext};base64,{base64.b64encode(open(main_bg, "rb").read()).decode()});
-         }}
-         </style>
-         """,
-         unsafe_allow_html=True
-     )
-#set_bg_hack('desk-blurred.jpg')
-
 
 
 # Initialization of session state:
@@ -43,7 +29,7 @@ if 'submitted' not in st.session_state:
 # -----------------------------------------------------------------------------
 # Declare some useful functions.
 
-@st.cache_data
+#@st.cache_data
 def restart():
     st.session_state.submitted = False
     st.rerun()
@@ -61,24 +47,43 @@ def submit_button(new_item_string):
         st.session_state.submitted = True
     return
 
-def plot_data(df_DT, df_KNN, df_LR, df):
+def plot_data(df_LGBM, df_RF, df_KNN, df_LR, scores, corr_df, df):
 
     st.header(f'Report: \'{st.session_state.item_string}\'')
-    
     ''
     ''
-
-    st.subheader(':deciduous_tree: Decision Tree Model')
+    st.subheader(':evergreen_tree::evergreen_tree: Random Forest Model')
     st.line_chart(
-        df_DT,
+        df_RF,
         x=None,
         y=('real', 'prediction'),
-        color=('#43b828', '#03a1fc')
+        color=('#3e8f2b', '#03a1fc')
     )
-
+    st.markdown(
+        f"""
+        <u>Mean Square Error</u><br>
+        <b>{scores["randomforest"]}</b>
+        """,
+        unsafe_allow_html=True
+    )
     ''
     ''
-
+    st.subheader(':bulb: LightGBM Model')
+    st.line_chart(
+        df_LGBM,
+        x=None,
+        y=('real', 'prediction'),
+        color=('#fff70a', '#03a1fc')
+    )
+    st.markdown(
+        f"""
+        <u>Mean Square Error</u><br>
+        <b>{scores["lightgbm"]}</b>
+        """,
+        unsafe_allow_html=True
+    )
+    ''
+    ''
     st.subheader(':runner: K-Nearest Neighbour Model')
     st.line_chart(
         df_KNN,
@@ -86,7 +91,13 @@ def plot_data(df_DT, df_KNN, df_LR, df):
         y=('real', 'prediction'),
         color=('#de12e6', '#03a1fc')
     )
-
+    st.markdown(
+        f"""
+        <u>Mean Square Error</u><br>
+        <b>{scores["knn"]}</b>
+        """,
+        unsafe_allow_html=True
+    )
     ''
     ''
 
@@ -97,6 +108,17 @@ def plot_data(df_DT, df_KNN, df_LR, df):
         y=('real', 'prediction'),
         color=('#e61247', '#03a1fc')
     )
+    st.markdown(
+        f"""
+        <u>Mean Square Error</u><br>
+        <b>{scores["linearregression"]}</b>
+        """,
+        unsafe_allow_html=True
+    )
+    ''
+
+    fig = px.bar(corr_df, x='Feature', y='Correlation', title='Feature Correlation to Google Trend')
+    st.plotly_chart(fig)
 
     return
 
@@ -118,11 +140,17 @@ st.markdown(
 if st.session_state.submitted == False:
     st.header('About')
     st.markdown("""
-        Our Introduction here!
-        Our Introduction here!
-        Our Introduction here!
-        Our Introduction here!
-        Our Introduction here!
+        <u>The News Trend Predictor</u> predicts how a given news item's Google Search popularity will trend for the rest of today.<br>
+        <br>
+        Here's how it works:        
+        <ol>
+            <li>Enter a news item's key search string.</li>
+            <li>We fetch the last month of Google Trend data, and fetch & feature engineer popularity<br>
+                features - we user data from the top 3 videos on the news item in the last 30 days, and incorporate calendar features.</li>
+            <li>A selection of models are trained and tested on this data.</li>
+            <li>The data from today's top 3 videos are extrapolated, and we use these features to predict the trend in populatity for the rest of today.</li>
+            <li>Model accuracy is plotted along with today's forecast, so you can determine whether the model is effective when predicting your submitted new item.</li>
+        </ol> 
     """, unsafe_allow_html=True)
 
 
@@ -148,9 +176,9 @@ else:
 
 
     raw_data_loader = st.progress(0, text=f"Fetching trend data for {st.session_state.item_string}")
-    for percent_complete in range(100):
-        raw_data_loader.progress(percent_complete + 1, text=f"Fetching trend data for '{st.session_state.item_string}'.")
-    time.sleep(1)
+    #for percent_complete in range(100):
+    #    raw_data_loader.progress(percent_complete + 1, text=f"Fetching trend data for '{st.session_state.item_string}'.")
+    #time.sleep(1)
     raw_data_loader.empty()
     data_fetcher = FetchData(raw_data_loader)
     trend, yt_data = data_fetcher.fetch_and_return_final_df_list(st.session_state.item_string)
@@ -166,17 +194,22 @@ else:
 
     remaining_processes_loader.progress(33, text=f"Analysing datasets for '{st.session_state.item_string}'.")
     # TODO - add analysis and plot analysis:
-    #corr_matrix = analyser = RunAnalysis()
+    analyser = RunAnalysis()
+    corr_matrix = analyser.get_corr_matrix(data_normalised)
 
     remaining_processes_loader.progress(66, text=f"Modelling predictions for '{st.session_state.item_string}'.")
     modeller = RunModels()
-    df_DT, df_KNN, df_LR = modeller.run_all_models(data_normalised)
+    df_LGBM, df_RF, df_KNN, df_LR, scores = modeller.run_all_models(data_normalised, corr_matrix)
 
     remaining_processes_loader.progress(99, text=f"Plotting results for '{st.session_state.item_string}'.")
 
-
     remaining_processes_loader.empty()
-    plot_data(df_DT, df_KNN, df_LR, data)
+    plot_data(df_LGBM, df_RF, df_KNN, df_LR, scores, corr_matrix, data)
 
 ''
 ''
+''
+''
+st.markdown("""
+    <i style="font-size: 80%;">Created by Liam Fitzmaurice, Zhuonan Mai (Miranda), and Shance Zhao (Alex) at Massey University</i>
+""", unsafe_allow_html=True)
