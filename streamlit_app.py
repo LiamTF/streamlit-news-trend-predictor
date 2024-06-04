@@ -193,14 +193,13 @@ else:
     data, data_normalised = feature_creator.create_features(trend, yt_data)
 
     remaining_processes_loader.progress(33, text=f"Analysing datasets for '{st.session_state.item_string}'.")
-    # TODO - add analysis and plot analysis:
     analyser = RunAnalysis()
     corr_matrix = analyser.get_corr_matrix(data_normalised)
 
     remaining_processes_loader.progress(66, text=f"Modelling predictions for '{st.session_state.item_string}'.")
     modeller = RunModels()
     df_LGBM, df_RF, df_KNN, df_LR, scores = modeller.run_all_models(data_normalised, corr_matrix)
-
+    
     remaining_processes_loader.progress(99, text=f"Plotting results for '{st.session_state.item_string}'.")
 
     remaining_processes_loader.empty()

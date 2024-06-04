@@ -119,7 +119,7 @@ button {
     }
 
 
-@media screen and (min-width: 1800px) {
+@media screen and (min-width: 2000px) {
     body, html, * {
         font-size: 1vw;
     }

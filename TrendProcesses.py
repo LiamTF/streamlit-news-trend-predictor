@@ -233,8 +233,8 @@ class CreateFeatures:
         yt_df.index = pd.to_datetime(yt_df.index)
         yt_df = yt_df.sort_index()
         yt_df.index = yt_df.index.tz_localize(None)
-        yt_df = yt_df.groupby(yt_df.index).mean()
         yt_df.index = yt_df.index.normalize()
+        yt_df = yt_df.groupby(yt_df.index).mean()
 
         # Create Features:
         df = yt_df.join(trend_df, how='inner')
@@ -332,7 +332,7 @@ class RunModels:
         y_pred = 0;
 
         if model_type == "knn":
-            model = KNeighborsRegressor(n_neighbors=2, metric=custom_distance)
+            model = KNeighborsRegressor(n_neighbors=5, metric=custom_distance)
         elif model_type == "linearregression":
             model = LinearRegression()
         elif model_type == "randomforest":
@@ -353,14 +353,15 @@ class RunModels:
                 #'lambda_l1': 0.1,
                 #'lambda_l2': 0.1,
                 #'min_gain_to_split': 0.1,
-                'verbose': 0
+                'n_estimators': 10,
+                'verbose': -1
             }
-            bst = lgb.train(params, train_data, 100)
+            bst = lgb.train(params, train_data, 10)
             y_pred = bst.predict(X_test, num_iteration=bst.best_iteration)
             y_pred = pd.Series(y_pred)
             y_pred.index = y_test.index
             mse = mean_squared_error(y_test, y_pred)
-            print("MSE:", mse)
+            #print("MSE:", mse)
             
             accuracy_df = pd.DataFrame(y_test)
             accuracy_df.columns = ["y_test"]
@@ -377,7 +378,6 @@ class RunModels:
             pred_df = pd.concat([pred_df, accuracy_df[~accuracy_df.index.isin(pred_df.index)]], axis=0)
             pred_df.rename(columns={target: "trend_pred"}, inplace=True)
 
-
             merged_df = pd.concat([df, pred_df], axis=1)
             merged_df["trend_pred"] = merged_df["trend_pred"].clip(0, 100)
             merged_df.rename(columns={"trend": "real", "trend_pred": "prediction"}, inplace=True)
@@ -391,7 +391,7 @@ class RunModels:
             y_pred = pd.Series(y_pred)
             y_pred.index = y_test.index
             mse = mean_squared_error(y_test, y_pred)
-            print("MSE:", mse)
+            #print("MSE:", mse)
             
             accuracy_df = pd.DataFrame(y_test)
             accuracy_df.columns = ["y_test"]
